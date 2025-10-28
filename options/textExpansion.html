@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Text Expansion Settings - Refyne</title>
+  <link rel="stylesheet" href="options_common.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Text Expansion Settings</h1>
+    <p>Manage your text shortcuts and expansions</p>
+  </div>
+  
+  <div class="container">
+    <!-- Card 1: Global Toggle -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Global Settings</h2>
+      </div>
+      <div class="card-body">
+        <section class="settings-section">
+          <div class="toggle-container">
+            <h3>Enable Text Expansion</h3>
+            <label class="switch">
+              <input type="checkbox" id="toggleEnabled" checked>
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-label">Enable Text Expansion</span>
+          </div>
+        </section>
+      </div>
+    </div>
+    
+    <!-- Card 2: Shortcuts -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Shortcuts</h2>
+      </div>
+      <div class="card-body">
+        <section class="shortcuts-section">
+          <div class="section-header">
+            <h3>Your Shortcuts</h3>
+            <button id="addShortcut" class="btn-primary">Add Shortcut</button>
+          </div>
+          
+          <div class="table-container">
+            <table id="shortcutsTable">
+              <thead>
+                <tr>
+                  <th>Shortcut</th>
+                  <th>Expansion</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="shortcutsList">
+                <!-- Shortcuts will be populated here -->
+              </tbody>
+            </table>
+          </div>
+          
+          <div id="emptyState" class="empty-state">
+            <p>No shortcuts configured yet. Add your first shortcut!</p>
+          </div>
+        </section>
+      </div>
+    </div>
+    
+    <!-- Card 3: Import/Export -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Import/Export</h2>
+      </div>
+      <div class="card-body">
+        <section class="import-export-section">
+          <div class="form-actions">
+            <button id="exportBtn" class="btn-secondary">Export Shortcuts</button>
+            <button id="importBtn" class="btn-secondary">Import Shortcuts</button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+          </div>
+        </section>
+      </div>
+    </div>
+    
+    <!-- Card 4: Navigation -->
+    <div class="card">
+      <div class="card-header">
+        <h2>More Settings</h2>
+      </div>
+      <div class="card-body">
+        <section class="navigation-section">
+          <div class="form-actions">
+            <a href="translation.html" class="btn-secondary">Translation Settings</a>
+            <a href="autofill.html" class="btn-secondary btn-autofill">Smart Auto-fill Settings</a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add/Edit Shortcut Modal -->
+  <div id="shortcutModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modalTitle">Add Shortcut</h2>
+      <form id="shortcutForm">
+        <div class="form-group">
+          <label for="shortcutTrigger">Shortcut:</label>
+          <input type="text" id="shortcutTrigger" placeholder="e.g., thank" required>
+          <small>Enter the text that will trigger the expansion</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="shortcutExpansion">Expansion:</label>
+          <textarea id="shortcutExpansion" placeholder="e.g., Thank you for your message!" rows="3" required></textarea>
+          <small>Enter the full text that will replace the shortcut</small>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Toast Notification -->
+  <div id="toast"></div>
+  
+  <script src="textExpansion.js"></script>
+</body>
+</html>

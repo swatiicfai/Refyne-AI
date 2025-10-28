@@ -1,5 +1,6 @@
 console.log("Refyne background service worker initialized");
 
+// Initialize default text expansion settings
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({
     enabled: true,
@@ -10,6 +11,69 @@ chrome.runtime.onInstalled.addListener(() => {
     version: '2.0.2'
   });
   
+  // Initialize default text expansion settings
+  chrome.storage.sync.get(['textExpansion'], (result) => {
+    if (!result.textExpansion) {
+      chrome.storage.sync.set({
+        textExpansion: {
+          enabled: true,
+          shortcuts: [
+            {"trigger": "thank", "expansion": "Thank you for your message!"},
+            {"trigger": "regards", "expansion": "Best regards,"},
+            {"trigger": "meeting", "expansion": "I'd be happy to schedule a meeting with you."},
+            {"trigger": "sorry", "expansion": "I apologize for any inconvenience."},
+            {"trigger": "welcome", "expansion": "You're welcome! Let me know if you need anything else."}
+          ]
+        }
+      });
+    }
+  });
+  
+  // Initialize default translation settings
+  chrome.storage.sync.get(['translation'], (result) => {
+    if (!result.translation) {
+      chrome.storage.sync.set({
+        translation: {
+          enabled: true,
+          nativeLanguage: 'en',
+          translationMode: 'auto',
+          displayOptions: {
+            showOriginal: true,
+            showTranslation: true,
+            showLanguageBadge: true,
+            replaceOriginal: false
+          },
+          provider: 'offline',
+          apiKey: '',
+          preferredLanguages: [],
+          // Advanced features
+          useGlossary: false,
+          useCustomModel: false,
+          glossaryName: '',
+          modelName: 'default',
+          enableSentimentAnalysis: false,
+          enableEntityRecognition: false,
+          enableContentClassification: false
+        }
+      });
+    }
+  });
+  
+  // Initialize default autofill settings
+  chrome.storage.sync.get(['recordFormData', 'savedEntries'], (result) => {
+    if (result.recordFormData === undefined) {
+      chrome.storage.sync.set({
+        recordFormData: false
+      });
+    }
+    
+    if (!result.savedEntries) {
+      chrome.storage.sync.set({
+        savedEntries: []
+      });
+    }
+  });
+
   chrome.contextMenus.create({
     id: 'refyne-check',
     title: 'Check with Refyne',

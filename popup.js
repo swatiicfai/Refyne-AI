@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   const correctionsCount = document.getElementById("correctionsCount");
   const wordsImproved = document.getElementById("wordsImproved");
   const modeIndicator = document.getElementById("modeIndicator");
+  const textExpansionSettings = document.getElementById("textExpansionSettings");
+  const translationSettings = document.getElementById("translationSettings");
 
   chrome.storage.local.get(
     ["enabled", "correctionsCount", "wordsImproved"],
@@ -13,6 +15,25 @@ document.addEventListener("DOMContentLoaded", async function () {
       wordsImproved.textContent = result.wordsImproved || 0;
     }
   );
+
+  // Handle text expansion settings link
+  if (textExpansionSettings) {
+    textExpansionSettings.addEventListener("click", (e) => {
+      e.preventDefault();
+      chrome.runtime.openOptionsPage();
+    });
+  }
+  
+  // Handle translation settings link
+  if (translationSettings) {
+    translationSettings.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Open translation settings page
+      chrome.tabs.create({
+        url: chrome.runtime.getURL('options/translation.html')
+      });
+    });
+  }
 
   async function checkAIStatus() {
     try {
@@ -46,18 +67,30 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   async function checkSystemAISupport() {
-    const chromeVersion = navigator.userAgent.match(/Chrome\/([0-9]+)/)?.[1];
-    if (!chromeVersion || parseInt(chromeVersion) < 137) {
+    // More comprehensive check
+    const userAgent = navigator.userAgent;
+    const chromeVersionMatch = userAgent.match(/Chrome\/([0-9]+)/);
+    const chromeVersion = chromeVersionMatch ? parseInt(chromeVersionMatch[1]) : 0;
+    
+    // Chrome AI APIs generally available from version 137+
+    if (chromeVersion < 137) {
+      console.log(`Chrome version ${chromeVersion} is below minimum required version 137 for AI features`);
       return false;
     }
-    const userAgent = navigator.userAgent;
-    const isSupportedOS =
-      userAgent.includes("Windows") ||
-      userAgent.includes("Mac OS") ||
-      userAgent.includes("Linux") ||
-      userAgent.includes("CrOS");
-
-    return isSupportedOS;
+    
+    // Check if we're in a secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      console.log("Not in secure context - Chrome AI APIs require HTTPS or localhost");
+      return false;
+    }
+    
+    // Check for actual API availability
+    try {
+      return typeof self.Rewriter !== 'undefined';
+    } catch (e) {
+      console.log("Rewriter API not available:", e);
+      return false;
+    }
   }
 
   function updateStatus(status, message, mode) {

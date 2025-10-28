@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Auto-fill</title>
+  <link rel="stylesheet" href="options_common.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Smart Auto-fill</h1>
+    <p>Save and reuse your form answers with AI-powered enhancements</p>
+  </div>
+  
+  <div class="container">
+    <!-- Unified Header Card -->
+    <div class="card unified-header">
+      <div class="header-content">
+        <div class="header-text">
+          <h2>Smart Auto-fill</h2>
+          <p>Save and reuse your form answers with AI-powered enhancements</p>
+        </div>
+        <div class="header-toggle">
+          <span class="toggle-label">Record My Answers</span>
+          <label class="switch large-switch">
+            <input type="checkbox" id="record-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Entries Card -->
+    <div class="card">
+      <div class="card-header with-button">
+        <h2>My Saved Answers</h2>
+        <button id="add-new-entry" class="btn-primary small-btn">+ Add New</button>
+      </div>
+      <div class="card-body">
+        <div id="autofill-list">
+          <div class="empty-state" id="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No Answers Saved Yet!</h3>
+            <p>Enable "Record My Answers" above and start filling out forms. Your saved entries will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- How to Use Accordion -->
+    <div class="card">
+      <div class="accordion-header">
+        <span class="accordion-title">ⓘ How to Use</span>
+        <span class="accordion-icon">▼</span>
+      </div>
+      <div class="accordion-content">
+        <ol>
+          <li>Enable "Record My Answers" above</li>
+          <li>Fill out forms on any website as usual</li>
+          <li>Your answers will be automatically saved</li>
+          <li>Next time you see a similar question, click the auto-fill icon to use your saved answer</li>
+          <li>Use "Rewrite with AI" to customize your answer for the specific context</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template for Saved Items -->
+  <template id="entry-template">
+    <div class="entry-item">
+      <div class="entry-content">
+        <div class="question-container">
+          <p class="question-text"></p>
+        </div>
+        <div class="answer-container">
+          <p class="answer-text"></p>
+        </div>
+      </div>
+      <div class="action-icons">
+        <button class="icon-button edit-btn" title="Edit">&#9998;</button>
+        <button class="icon-button delete-btn" title="Delete">&#128465;</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- Add/Edit Entry Modal -->
+  <div id="entry-modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 id="modal-title">Add New Entry</h2>
+      <form id="entry-form">
+        <div class="form-group">
+          <label for="entry-question">Question:</label>
+          <input type="text" id="entry-question" placeholder="e.g., What is your full name?" required>
+        </div>
+        <div class="form-group">
+          <label for="entry-answer">Answer:</label>
+          <textarea id="entry-answer" placeholder="e.g., John Doe" rows="3" required></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="cancel-entry" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="autofill.js"></script>
+</body>
+</html>

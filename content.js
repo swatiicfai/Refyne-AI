@@ -154,7 +154,19 @@ function initializeOfflineChecker() {
 }
 
 function isChromeAIAvailable() {
-    return 'Rewriter' in self;
+    // Check if we're in a secure context first
+    if (!window.isSecureContext) {
+        console.log("Not in secure context - Chrome AI APIs require HTTPS or localhost");
+        return false;
+    }
+    
+    // More robust check for Rewriter API
+    try {
+        return typeof self.Rewriter !== 'undefined';
+    } catch (e) {
+        console.log("Error checking Rewriter API:", e);
+        return false;
+    }
 }
 
 async function monitorDownloadProgress() {
@@ -228,9 +240,17 @@ function stopSpeaking() {
     }
 }
 async function initializeRewriter() {
+    // First check if we're in a supported environment
+    if (!window.isSecureContext) {
+        console.log("Chrome AI features require HTTPS or localhost");
+        showStatusMessage("AI features require secure context - using offline mode", "warning");
+        offlineMode = true;
+        return false;
+    }
+
     if (!isChromeAIAvailable()) {
-        console.log("Rewriter API not available in this browser");
-        showStatusMessage("AI features not available - using offline mode", "warning");
+        console.log("Rewriter API not available in this browser/environment");
+        showStatusMessage("AI features not available in this browser - using offline mode", "warning");
         offlineMode = true;
         return false;
     }
@@ -283,14 +303,17 @@ async function initializeRewriter() {
     } catch (error) {
         console.error("Failed to initialize Rewriter:", error);
         
-        if (error.message.includes('download') || error.message?.includes('Download')) {
+        // More specific error handling
+        if (error.message && (error.message.includes('secure context') || error.message.includes('HTTPS'))) {
+            showStatusMessage("AI features require HTTPS or localhost", "error");
+        } else if (error.message && (error.message.includes('download') || error.message?.includes('Download'))) {
             showStatusMessage("Download in progress... Using offline mode.", "info");
             offlineMode = true;
             monitorDownloadProgress();
         } else {
-            showStatusMessage("Failed to initialize AI features - using offline mode", "warning");
-            offlineMode = true;
+            showStatusMessage("AI features not available - using offline mode", "warning");
         }
+        offlineMode = true;
         return false;
     }
 }
@@ -461,13 +484,49 @@ function applySuggestion(target, original, corrected) {
 
     try {
         if (target.isContentEditable) {
-            target.textContent = currentText.replace(original, corrected);
-            target.dispatchEvent(new Event('input', { bubbles: true }));
+            // More robust approach for contenteditable elements
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(target);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            const newText = currentText.replace(original, corrected);
+            target.textContent = newText;
+            
+            // Safer event dispatching
+            const inputEvent = new Event('input', {
+                bubbles: true,
+                cancelable: true
+            });
+            target.dispatchEvent(inputEvent);
         } else {
-            target.value = currentText.replace(original, corrected);
-            const pos = currentText.indexOf(original) + corrected.length;
-            target.setSelectionRange(pos, pos);
-            target.dispatchEvent(new Event('input', { bubbles: true }));
+            // Handle form inputs with better error handling
+            const newText = currentText.replace(original, corrected);
+            target.value = newText;
+            
+            // Set cursor position safely
+            try {
+                const pos = currentText.indexOf(original) + corrected.length;
+                if (pos >= 0 && target.setSelectionRange) {
+                    target.setSelectionRange(pos, pos);
+                }
+            } catch (posError) {
+                // Ignore cursor positioning errors on restricted sites
+                console.log("Could not set cursor position:", posError);
+            }
+            
+            // Safer event dispatching for inputs
+            try {
+                const inputEvent = new Event('input', {
+                    bubbles: true,
+                    cancelable: true
+                });
+                target.dispatchEvent(inputEvent);
+            } catch (eventError) {
+                // Fallback for restricted contexts
+                console.log("Could not dispatch input event:", eventError);
+            }
         }
 
         chrome.runtime.sendMessage({ 
@@ -482,8 +541,13 @@ function applySuggestion(target, original, corrected) {
         return true;
     } catch (error) {
         console.error("Failed to apply suggestion:", error);
-        showStatusMessage("Failed to apply suggestion", "error");
-        setTimeout(hideStatusMessage, 2000);
+        // More specific error handling
+        if (error.name === 'DOMException' || error.name === 'SecurityError') {
+            showStatusMessage("Cannot modify content on this page (restricted)", "error");
+        } else {
+            showStatusMessage("Failed to apply suggestion", "error");
+        }
+        setTimeout(hideStatusMessage, 3000);
         return false;
     }
 }
@@ -615,6 +679,17 @@ async function getAIStatus() {
     console.log("Offline checker initialized:", offlineInitialized);
     
     const aiInitialized = await initializeRewriter();
+    
+    // Initialize translation service and UI
+    if (typeof window.TranslationService !== 'undefined') {
+        await window.TranslationService.init();
+        console.log("Translation service initialized");
+    }
+    
+    if (typeof window.TranslationUI !== 'undefined') {
+        await window.TranslationUI.init();
+        console.log("Translation UI initialized");
+    }
     
     if (aiInitialized || offlineInitialized) {
         console.log("Refyne initialized successfully!");

@@ -106,6 +106,17 @@
         input:checked + .slider:before {
             transform: translateX(26px);
         }
+        .settings-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: #4caf50;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .settings-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -145,6 +156,11 @@
             </label>
         </div>
     </div>
+    
+    <a href="#" id="textExpansionSettings" class="settings-link">Text Expansion Settings</a>
+    <a href="#" id="translationSettings" class="settings-link">Translation Settings</a>
+    <a href="options/autofill.html" class="settings-link btn-autofill">Smart Auto-fill Settings</a>
+    
     <script src="popup.js"></script>
 </body>
 </html>
