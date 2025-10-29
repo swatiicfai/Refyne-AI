@@ -1,6 +1,6 @@
 console.log("Refyne background service worker initialized");
 
-// Initialize default text expansion settings
+// Initialize default settings on install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({
     enabled: true,
@@ -20,9 +20,7 @@ chrome.runtime.onInstalled.addListener(() => {
           shortcuts: [
             {"trigger": "thank", "expansion": "Thank you for your message!"},
             {"trigger": "regards", "expansion": "Best regards,"},
-            {"trigger": "meeting", "expansion": "I'd be happy to schedule a meeting with you."},
-            {"trigger": "sorry", "expansion": "I apologize for any inconvenience."},
-            {"trigger": "welcome", "expansion": "You're welcome! Let me know if you need anything else."}
+            {"trigger": "meeting", "expansion": "I'd be happy to schedule a meeting with you."}
           ]
         }
       });
@@ -42,124 +40,34 @@ chrome.runtime.onInstalled.addListener(() => {
             showTranslation: true,
             showLanguageBadge: true,
             replaceOriginal: false
-          },
-          provider: 'offline',
-          apiKey: '',
-          preferredLanguages: [],
-          // Advanced features
-          useGlossary: false,
-          useCustomModel: false,
-          glossaryName: '',
-          modelName: 'default',
-          enableSentimentAnalysis: false,
-          enableEntityRecognition: false,
-          enableContentClassification: false
-        }
-      });
-    }
-  });
-  
-  // Initialize default autofill settings
-  chrome.storage.sync.get(['recordFormData', 'savedEntries'], (result) => {
-    if (result.recordFormData === undefined) {
-      chrome.storage.sync.set({
-        recordFormData: false
-      });
-    }
-    
-    if (!result.savedEntries) {
-      chrome.storage.sync.set({
-        savedEntries: []
-      });
-    }
-  });
-
-  chrome.contextMenus.create({
-    id: 'refyne-check',
-    title: 'Check with Refyne',
-    contexts: ['selection']
-  }, () => {
-    if (chrome.runtime.lastError) {
-      console.log('Context menu error:', chrome.runtime.lastError);
-    } else {
-      console.log('Context menu created');
-    }
-  });
-  
-  try {
-    if (chrome.action && chrome.action.setBadgeText) {
-      chrome.action.setBadgeText({ text: 'ON' });
-      chrome.action.setBadgeBackgroundColor({ color: '#4caf50' });
-    } else if (chrome.browserAction) {
-      chrome.browserAction.setBadgeText({ text: 'ON' });
-      chrome.browserAction.setBadgeBackgroundColor({ color: '#4caf50' });
-    }
-  } catch (error) {
-    console.log('Badge setup failed:', error);
-  }
-});
-
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === 'refyne-check' && info.selectionText) {
-    chrome.tabs.sendMessage(tab.id, {
-      action: 'checkText',
-      text: info.selectionText
-    }).catch(err => console.log('Context menu message failed:', err));
-  }
-});
-
-function setupActionListener() {
-  if (chrome.action && chrome.action.onClicked) {
-    chrome.action.onClicked.addListener((tab) => {
-      toggleExtensionState();
-    });
-  } else if (chrome.browserAction && chrome.browserAction.onClicked) {
-    chrome.browserAction.onClicked.addListener((tab) => {
-      toggleExtensionState();
-    });
-  } else {
-    console.log('Action onClicked API not available');
-  }
-}
-
-setupActionListener();
-
-function toggleExtensionState() {
-  chrome.storage.local.get('enabled', ({ enabled }) => {
-    const newState = !enabled;
-    chrome.storage.local.set({ enabled: newState }, () => {
-      try {
-        if (chrome.action && chrome.action.setBadgeText) {
-          chrome.action.setBadgeText({ text: newState ? 'ON' : 'OFF' });
-          chrome.action.setBadgeBackgroundColor({ color: newState ? '#4caf50' : '#666' });
-        } else if (chrome.browserAction) {
-          chrome.browserAction.setBadgeText({ text: newState ? 'ON' : 'OFF' });
-          chrome.browserAction.setBadgeBackgroundColor({ color: newState ? '#4caf50' : '#666' });
-        }
-      } catch (error) {
-        console.log('Badge update failed:', error);
-      }
-      chrome.tabs.query({}, (tabs) => {
-        tabs.forEach(tab => {
-          if (tab.url && tab.url.startsWith('http')) {
-            chrome.tabs.sendMessage(tab.id, {
-              action: 'enabledStateChanged',
-              enabled: newState
-            }).catch(err => console.log('Tab message failed:', err));
           }
-        });
+        }
       });
-    });
+    }
   });
-}
+  
+  // Initialize default TTS setting
+  chrome.storage.sync.get(['enableTTS'], (result) => {
+    if (result.enableTTS === undefined) {
+      chrome.storage.sync.set({ enableTTS: false });
+    }
+  });
+});
 
+// Listener for messages from content scripts (e.g., when a suggestion is applied)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'correctionApplied') {
+  
+  // Handle action to log a correction for stats
+  if (request.action === 'logCorrection' && request.original && request.corrected) {
     chrome.storage.local.get(['correctionsCount', 'wordsImproved'], (result) => {
+      // Update corrections count
       const newCorrections = (result.correctionsCount || 0) + 1;
+      
+      // Update words improved count (based on word difference)
       const originalWords = request.original.split(/\s+/).length;
       const correctedWords = request.corrected.split(/\s+/).length;
-      const wordsChanged = Math.abs(correctedWords - originalWords);
+      // Simple word change count
+      const wordsChanged = Math.abs(correctedWords - originalWords); 
       const newWords = (result.wordsImproved || 0) + wordsChanged;
 
       chrome.storage.local.set({
@@ -167,14 +75,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         wordsImproved: newWords
       });
       
+      // Update the badge text
       try {
         if (chrome.action && chrome.action.setBadgeText) {
           chrome.action.setBadgeText({ 
             text: newCorrections > 0 ? String(newCorrections) : 'ON' 
           });
-        } else if (chrome.browserAction) {
-          chrome.browserAction.setBadgeText({ 
-            text: newCorrections > 0 ? String(newCorrections) : 'ON' 
+          chrome.action.setBadgeBackgroundColor({
+              color: '#4caf50' 
           });
         }
       } catch (error) {
@@ -190,13 +98,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ success: true });
   }
 
+  // Handle action to check extension enabled state
   if (request.action === 'checkEnabled') {
     chrome.storage.local.get('enabled', ({ enabled }) => {
       sendResponse({ enabled: enabled !== false });
     });
-    return true;
+    return true; 
   }
 
+  // Handle action to get stats
   if (request.action === 'getStats') {
     chrome.storage.local.get(['correctionsCount', 'wordsImproved'], (result) => {
       sendResponse({
@@ -204,6 +114,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         wordsImproved: result.wordsImproved || 0
       });
     });
-    return true;
+    return true; 
   }
 });
