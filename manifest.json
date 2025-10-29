@@ -15,13 +15,13 @@
     "https://language.googleapis.com/"
   ],
   "background": {
-    "service_worker": "background (1).js" 
+    "service_worker": "background.js" 
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": [
-        "content (2).js", 
+        "content.js", 
         "textExpansion.js", 
         "translation.js", 
         "translation-ui.js",
@@ -32,7 +32,7 @@
     }
   ],
   "action": {
-    "default_popup": "popup (2).html", 
+    "default_popup": "popup.html", 
     "default_title": "Refyne",
     "default_icon": {
       "16": "icons/pen.png",
