@@ -57,16 +57,12 @@ chrome.runtime.onInstalled.addListener(() => {
 // Listener for messages from content scripts (e.g., when a suggestion is applied)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
-  // Handle action to log a correction for stats
   if (request.action === 'logCorrection' && request.original && request.corrected) {
     chrome.storage.local.get(['correctionsCount', 'wordsImproved'], (result) => {
-      // Update corrections count
       const newCorrections = (result.correctionsCount || 0) + 1;
       
-      // Update words improved count (based on word difference)
       const originalWords = request.original.split(/\s+/).length;
       const correctedWords = request.corrected.split(/\s+/).length;
-      // Simple word change count
       const wordsChanged = Math.abs(correctedWords - originalWords); 
       const newWords = (result.wordsImproved || 0) + wordsChanged;
 
@@ -75,7 +71,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         wordsImproved: newWords
       });
       
-      // Update the badge text
       try {
         if (chrome.action && chrome.action.setBadgeText) {
           chrome.action.setBadgeText({ 
@@ -88,25 +83,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       } catch (error) {
         console.log('Badge update failed:', error);
       }
-      
-      console.log(`Correction applied (${request.source || 'ai'}):`, {
-        original: request.original,
-        corrected: request.corrected
-      });
     });
-
     sendResponse({ success: true });
   }
 
-  // Handle action to check extension enabled state
   if (request.action === 'checkEnabled') {
     chrome.storage.local.get('enabled', ({ enabled }) => {
       sendResponse({ enabled: enabled !== false });
     });
     return true; 
   }
-
-  // Handle action to get stats
+  
   if (request.action === 'getStats') {
     chrome.storage.local.get(['correctionsCount', 'wordsImproved'], (result) => {
       sendResponse({
