@@ -7,7 +7,7 @@
     "storage",
     "activeTab",
     "contextMenus",
-    "tts"
+    "tts" 
   ],
   "host_permissions": [
     "<all_urls>",
@@ -15,7 +15,7 @@
     "https://language.googleapis.com/"
   ],
   "background": {
-    "service_worker": "background (1).js"
+    "service_worker": "background (1).js" 
   },
   "content_scripts": [
     {
@@ -32,7 +32,7 @@
     }
   ],
   "action": {
-    "default_popup": "popup (2).html",
+    "default_popup": "popup (2).html", 
     "default_title": "Refyne",
     "default_icon": {
       "16": "icons/pen.png",
