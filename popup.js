@@ -20,7 +20,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (textExpansionSettings) {
     textExpansionSettings.addEventListener("click", (e) => {
       e.preventDefault();
-      chrome.runtime.openOptionsPage();
+      // Open the general options page, where text expansion settings are managed
+      chrome.runtime.openOptionsPage(); 
     });
   }
   
@@ -28,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (translationSettings) {
     translationSettings.addEventListener("click", (e) => {
       e.preventDefault();
-      // Open translation settings page
+      // Open translation settings page (assuming it's 'options/translation.html')
       chrome.tabs.create({
         url: chrome.runtime.getURL('options/translation.html')
       });
@@ -41,83 +42,47 @@ document.addEventListener("DOMContentLoaded", async function () {
         active: true,
         currentWindow: true,
       });
-      if (tabs[0] && tabs[0].id) {
-        const response = await chrome.tabs.sendMessage(tabs[0].id, {
-          action: "getAIStatus",
-        });
 
-        if (response) {
-          updateStatus(response.status, response.message, response.mode);
-          return;
-        }
+      if (tabs.length === 0 || !tabs[0].id) {
+        updateStatus("unavailable", "No active tab.");
+        return;
+      }
+
+      // Send message to the content script to get its AI/Offline status
+      const response = await chrome.tabs.sendMessage(tabs[0].id, {
+        action: "getAIStatus",
+      });
+
+      if (response && response.mode) {
+        updateStatus(response.mode, response.message);
+      } else {
+        updateStatus("unavailable", "Could not check AI status (Content script not ready).");
       }
     } catch (error) {
-      console.log("Could not get AI status from content script:", error);
-    }
-    const hasAISupport = await checkSystemAISupport();
-    if (hasAISupport) {
-      updateStatus("available", "AI Model Ready", "ai");
-    } else {
-      updateStatus(
-        "unavailable",
-        "AI Not Supported - Using Offline Mode",
-        "offline"
-      );
-    }
-  }
-
-  async function checkSystemAISupport() {
-    // More comprehensive check
-    const userAgent = navigator.userAgent;
-    const chromeVersionMatch = userAgent.match(/Chrome\/([0-9]+)/);
-    const chromeVersion = chromeVersionMatch ? parseInt(chromeVersionMatch[1]) : 0;
-    
-    // Chrome AI APIs generally available from version 137+
-    if (chromeVersion < 137) {
-      console.log(`Chrome version ${chromeVersion} is below minimum required version 137 for AI features`);
-      return false;
-    }
-    
-    // Check if we're in a secure context (HTTPS or localhost)
-    if (!window.isSecureContext) {
-      console.log("Not in secure context - Chrome AI APIs require HTTPS or localhost");
-      return false;
-    }
-    
-    // Check for actual API availability
-    try {
-      return typeof self.Rewriter !== 'undefined';
-    } catch (e) {
-      console.log("Rewriter API not available:", e);
-      return false;
-    }
-  }
-
-  function updateStatus(status, message, mode) {
-    statusDiv.textContent = message;
-    if (modeIndicator) {
-      if (mode === "offline") {
-        modeIndicator.textContent = "Offline Mode";
-        modeIndicator.style.color = "#FF9800";
+      // Check if the error is due to the content script not being loaded
+      if (error.message.includes("Could not establish connection")) {
+        updateStatus("unavailable", "Extension not loaded on this page. Reload page.");
       } else {
-        modeIndicator.textContent = "🤖 AI Mode";
-        modeIndicator.style.color = "#4CAF50";
+        updateStatus("unavailable", "Error checking AI status.");
       }
+      console.error("Error checking AI status:", error);
     }
+  }
 
-    switch (status) {
-      case "available":
+  function updateStatus(mode, message) {
+    // Update the indicator text
+    modeIndicator.textContent = message.includes("Offline") ? "🔒 Offline" : (message.includes("AI Ready") ? "✨ Online" : "❌ Error");
+
+    switch (mode) {
+      case "ready":
         statusDiv.className = "status ready";
         statusDiv.textContent = "✅ " + message;
-        break;
-      case "downloading":
-        statusDiv.className = "status downloading";
-        statusDiv.textContent = "📥 " + message;
         break;
       case "downloadable":
         statusDiv.className = "status downloading";
         statusDiv.textContent = "⏳ " + message;
         break;
+      case "offline":
       case "unavailable":
       default:
         statusDiv.className = "status error";
@@ -129,21 +94,25 @@ document.addEventListener("DOMContentLoaded", async function () {
   const toggleTTS = document.getElementById("toggleTTS");
 
   chrome.storage.sync.get(["enableTTS"], (result) => {
-    toggleTTS.checked = result.enableTTS !== false;
+    // Corrected to ensure default is false if not set
+    toggleTTS.checked = result.enableTTS === true; 
   });
 
   toggleTTS.addEventListener("change", function () {
     chrome.storage.sync.set({ enableTTS: this.checked });
   });
-  checkAIStatus();
+  
+  checkAIStatus(); // Initial status check
 
   toggle.addEventListener("change", function () {
     chrome.storage.local.set({ enabled: this.checked }, () => {
+      // Set badge text to ON/OFF
       chrome.action.setBadgeText({ text: this.checked ? "ON" : "OFF" });
       chrome.action.setBadgeBackgroundColor({
         color: this.checked ? "#4caf50" : "#666",
       });
 
+      // Notify content scripts of state change
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0] && tabs[0].id) {
           chrome.tabs
@@ -157,6 +126,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
   });
 
+  // Re-fetch stats on load
   chrome.storage.local.get(["correctionsCount", "wordsImproved"], (result) => {
     correctionsCount.textContent = result.correctionsCount || 0;
     wordsImproved.textContent = result.wordsImproved || 0;
