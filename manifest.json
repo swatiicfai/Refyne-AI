@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "contextMenus"
+    "contextMenus",
+    "tts"
   ],
   "host_permissions": [
     "<all_urls>",
@@ -14,24 +15,24 @@
     "https://language.googleapis.com/"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background (1).js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": [
-        "content.js", 
-        "content-scripts/textExpansion.js", 
-        "content-scripts/translation.js", 
-        "content-scripts/translation-ui.js",
-        "content-scripts/autofill-recorder.js",
-        "content-scripts/autofill-injector.js"
+        "content (2).js", 
+        "textExpansion.js", 
+        "translation.js", 
+        "translation-ui.js",
+        "autofill-recorder.js",
+        "autofill-injector.js"
       ],
       "run_at": "document_end"
     }
   ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "popup (2).html",
     "default_title": "Refyne",
     "default_icon": {
       "16": "icons/pen.png",
@@ -46,8 +47,5 @@
     "48": "icons/pen.png",
     "128": "icons/pen.png"
   },
-  "options_ui": {
-    "page": "options/textExpansion.html",
-    "open_in_tab": true
-  }
+  "options_page": "options/general.html"
 }
